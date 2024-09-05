@@ -13,7 +13,7 @@ if not GITHUB_TOKEN:
 
 token = GITHUB_TOKEN
 
-username =  os.getenv('USERNAME')
+username =  os.getenv('USER_GITHUB')
 repo = os.getenv("REPOSITORY")
 url = f"https://api.github.com/repos/{username}/{repo}/issues"
 headers = {
@@ -22,6 +22,8 @@ headers = {
 }
 
 response = requests.get(url, headers=headers)
+
+print(username)
 
 if response.status_code == 200:
     issues = response.json()
