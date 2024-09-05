@@ -47,10 +47,10 @@ This project provides a Python script to analyze and visualize GitHub issues fro
 
 ## Usage
 
-1. Edit the script to set the correct `USERNAME` and `REPOSITORY` variables in the script:
+1. Edit the script to set the correct `USER_GITHUB` and `REPOSITORY` variables in the script:
 
     ```python
-    USERNAME = 'your_repository_owner'
+    USER_GITHUB = 'your_repository_owner'
     REPOSITORY = 'your_repository_name'
     ```
 
