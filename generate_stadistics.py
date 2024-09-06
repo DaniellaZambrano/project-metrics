@@ -21,30 +21,46 @@ headers = {
     "Accept": "application/vnd.github.v3+json"
 }
 
-response = requests.get(url, headers=headers)
 
-print(username)
+def get_issues(state='all', labels=None):
+
+    params = {
+        "state": state,  # 'open', 'closed' o 'all'
+        "labels": labels,
+        "per_page": 100
+    }
+    
+    response = requests.get(url, headers=headers, params=params)
+    response.raise_for_status()
+    
+    return response
+
+response = get_issues("all", "QA")
 
 if response.status_code == 200:
-    issues = response.json()
-    
-    # Filter issues by "bug"
-    issues_filtered = [issue for issue in issues if 'labels' in issue and any(label['name'] == 'QA' for label in issue['labels'])]
+    issues_filtered = response.json()
     
     # Create a DataFrame from the issues
     df = pd.DataFrame(issues_filtered)
     
+    df['created_at'] = pd.to_datetime(df['created_at'])
+    # Year and week
+    df['week'] = df['created_at'].dt.strftime('%Y-%U') 
+
     # Save the data to a CSV file
-    df.to_csv('issues.csv', columns=['number', 'title', 'created_at'], index=False)
-    print("Datos guardados en 'issues.csv'.")
+    df.to_csv('issues_per_label.csv', columns=['number', 'title', 'created_at'], index=False)
+    print("Saved data in 'issues_per_label.csv'.")
     
     # Read the csv data
-    df = pd.read_csv('issues.csv')
-    df['created_at'] = pd.to_datetime(df['created_at'])
+    # df = pd.read_csv('issues_per_label.csv')
+    # df['created_at'] = pd.to_datetime(df['created_at'])
     
     # Group by date and count issuess
-    issue_counts = df.groupby(df['created_at'].dt.date).size()
+    #issue_counts = df.groupby(df['created_at'].dt.date).size()
     
+    # Group by week and count issuess
+    issue_counts = df.groupby('week').size()
+
     # Ploting
     plt.figure(figsize=(10, 6))
     plt.bar(issue_counts.index, issue_counts.values, color='b', edgecolor='black')
@@ -56,8 +72,8 @@ if response.status_code == 200:
     
     # Saving
     plt.tight_layout()
-    plt.savefig('issues_per_day.png')
-    print("Saved as 'issues_per_day.png'.")
+    plt.savefig('issues_per_week.png')
+    print("Saved as 'issues_per_week.png'.")
     plt.show()
 
 else:
