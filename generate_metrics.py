@@ -103,11 +103,6 @@ if response.status_code == 200:
                 # print(f"Option ID: {field['optionId']}")
                 option_ids.append(field['optionId'])
 
-    count = 0
-    for option in option_ids:
-      if status_id == option:
-        count = count + 1
-
 
     res = []
     content_list = []
@@ -126,22 +121,20 @@ if response.status_code == 200:
 
     column_list = []
     for item in items:
-        field_values = item.get('fieldValues', {}).get('nodes', [])
-        for field in field_values:
-            if 'optionId' in field:
-                if field['optionId'] == status_id:
-                    content = item.get('content', {})                  
-                    # Filter specific fields
-                    filtered_content = {
-                        'number': content.get('number'),
-                        'title': content.get('title'),
-                        'createdAt': content.get('createdAt')
-                    }
+        type = item.get('type', '')
+        if type in ["ISSUE"]:
+            content = item.get('content', {})                  
+            # Filter specific fields
+            filtered_content = {
+                'number': content.get('number'),
+                'title': content.get('title'),
+                'createdAt': content.get('createdAt')
+            }
 
-                    column_list.append(filtered_content)
+            column_list.append(filtered_content)
 
     df = pd.DataFrame(column_list)
-    df.to_csv('issues_per_column.csv', index=False)
+    df.to_csv('tickets_per_issues.csv', index=False)
 
 
     # Convertir la columna 'createdAt' a formato de fecha
@@ -151,7 +144,7 @@ if response.status_code == 200:
     # Agrupar por la fecha y contar cuántas entradas hay por día
     date_counts = df.groupby('createdAt').size().reset_index(name='count')
     # Save the data to excel
-    date_counts.to_excel('count_per_column-day.xlsx', index=False)
+    date_counts.to_excel('count_per_issues-day.xlsx', index=False)
     print("Saved data in 'issues_per_column.csv'.")
 
 
