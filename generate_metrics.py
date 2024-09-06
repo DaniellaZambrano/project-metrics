@@ -91,61 +91,58 @@ response = requests.post(url, json={'query': query}, headers=headers)
 if response.status_code == 200:
     data = response.json()
 
-    status_id = os.getenv('STATUS_ID_In_Testing')
-
     items = data['data']['node']['items']['nodes']
-    
-    option_ids = []
-    for item in items:
-        field_values = item.get('fieldValues', {}).get('nodes', [])
-        for field in field_values:
-            if 'optionId' in field:
-                # print(f"Option ID: {field['optionId']}")
-                option_ids.append(field['optionId'])
-
-
-    res = []
-    content_list = []
-    for item in items:
-        content = item.get('content', {})
-        # Filter specific fields
-        filtered_content = {
-            'number': content.get('number'),
-            'title': content.get('title'),
-            'createdAt': content.get('createdAt')
-        }
-        content_list.append(filtered_content)
-        if 'number' in content:
-            res.append(content['number'])
-
 
     column_list = []
     for item in items:
         type = item.get('type', '')
         if type in ["ISSUE"]:
-            content = item.get('content', {})                  
-            # Filter specific fields
-            filtered_content = {
-                'number': content.get('number'),
-                'title': content.get('title'),
-                'createdAt': content.get('createdAt')
-            }
+            content = item.get('content', {})    
+            field_values = item.get('fieldValues', {}).get('nodes', [])
+            for field in field_values:
+              if 'optionId' in field:              
+                # Filter specific fields
+                filtered_content = {
+                    'number': content.get('number'),
+                    'title': content.get('title'),
+                    'createdAt': content.get('createdAt'),
+                    'optionId': field['optionId']
+                }
 
             column_list.append(filtered_content)
 
+    
     df = pd.DataFrame(column_list)
+    
+    # optionId parse to string value
+    option_mapping = {}
+    for key, value in os.environ.items():
+        if key.startswith('STATUS_ID_'):
+            option_id = key.replace('STATUS_ID_', '')  # ID
+            option_mapping[option_id] = value
+
+    option_mapping = {v: k for k, v in option_mapping.items()}
+
+    # Mapping the ids
+    df['optionId'] = df['optionId'].astype(str).map(option_mapping)
+    # Handle possible NaN values ​​if some ID has no mapping
+    df['optionId'] = df['optionId'].fillna('Unknown Option')
+
     df.to_csv('tickets_per_issues.csv', index=False)
-
-
-    # Convertir la columna 'createdAt' a formato de fecha
+    
+    # Convert 'createdAt' column to date format
     df['createdAt'] = pd.to_datetime(df['createdAt'])
-    # Extraer solo la fecha (sin la hora) de la columna 'createdAt'
+    # Extract only date (without time) from 'createdAt' column
     df['createdAt'] = df['createdAt'].dt.date
-    # Agrupar por la fecha y contar cuántas entradas hay por día
-    date_counts = df.groupby('createdAt').size().reset_index(name='count')
+    # Group by date and count how many entries there are per day
+    # date_counts = df.groupby('createdAt').size().reset_index(name='count')
+
+    date_counts = df.groupby(['createdAt', 'optionId']).size().reset_index(name='count')
+
     # Save the data to excel
+    df.to_excel('tickets_per_issues.xlsx', index=False)
     date_counts.to_excel('count_per_issues-day.xlsx', index=False)
-    print("Saved data in 'issues_per_column.csv'.")
+    print("Saved data in 'tickets_per_issues.csv'.")
 
 
 else:
